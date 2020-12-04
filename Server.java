@@ -1,5 +1,8 @@
 import java.io.*;
 import java.net.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 //
@@ -11,14 +14,70 @@ public class Server {
     private int[][] conn;
     private int routing_update_interval;
     private String[][] matrix;
-
+    private Socket localSocket;
+    private DataOutputStream dOut;
+    private DataInputStream dIn;
     public Server(int num_server, int num_neighbors, String[][] ip_addr, int[][] conn, int routing_update_interval) {
         this.num_server = num_server;
         this.num_neighbors = num_neighbors;
         this.ip_addr = ip_addr;
         this.conn = conn;
         this.routing_update_interval = routing_update_interval;
+        //creating socket
+     
+        System.out.println();
+        try {//needs to get socket from file
+            localSocket = new Socket(ip_addr[0][1], Integer.parseInt(ip_addr[0][2]));
+            // InetAddress myIP=InetAddress.getLocalHost();
+            //this line is for debugging
+            // localSocket = new Socket();
+            
+            //creating in/out streams to send and recieve messages
+            dOut = new DataOutputStream(localSocket.getOutputStream());
+            dIn = new DataInputStream(localSocket.getInputStream());
+            localSocket.connect(localSocket.getRemoteSocketAddress());
+            
+        } catch (Exception e) {
+            //TODO: handle exception
+            System.out.println(e+" error here 1");
+        }
+        //////////creating timer for period table updates//////
+        class TableUpdate extends TimerTask {
+            @Override
+            public void run() {
+                //for testing timer
+                System.out.println("update sent");
+                try{
+                    dOut.writeUTF("message sent");
+                    dOut.flush();
+                }
+                catch (Exception e) {
+            //TODO: handle exception
+            System.out.println(e+" error here 2");
+        }
+            }
+        }
+        new Timer().schedule(new TableUpdate(),0,routing_update_interval);
+        
 
+        ///////////////////////////////////////////////////////
+
+        ///////creating recieving function for table updates//////////////////////
+        Thread serverConnect = new Thread(new Runnable() {
+            public void run() {
+                try{
+                    System.out.println(dIn.readUTF());
+                    }
+                    catch (Exception e) {
+                        //TODO: handle exception
+                        System.out.println(e+" error here 3");
+                    }
+            }
+        });
+        serverConnect.run();
+
+
+        ///////////////////////////////////////////////////////////////////////////
         this.matrix = new String[this.num_server][this.num_server];
 
         for (int i = 0; i < this.num_server; i++) {
@@ -161,14 +220,14 @@ public class Server {
 
     private void disable(String string) {
         //do not close connection to server ID
-        //change topology/matrix to show it as closed
+        //change topology/matrix to show it as closed/unavilable
         update_link(localServerID, Integer.parseInt(string), "inf");
     }
 
     private void crash() {
         //close all active connections
 
-        //update matric to show all connections closed
+        //update matrix to show all connections closed
         crashed();
     }
 
