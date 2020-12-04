@@ -5,6 +5,7 @@ import java.util.*;
 //
 public class Server {
     private int num_server;
+    private int localServerID;
     private int num_neighbors;
     private String[][] ip_addr;
     private int[][] conn;
@@ -48,17 +49,36 @@ public class Server {
         }
         System.out.println();
     }
-
+    public void crashed(){
+        for(int i=0;i<this.num_server;i++){
+            for(int j=0;j<this.num_server;j++){
+                if(i!=j){
+                matrix[i][j]="inf";
+                }
+            }
+        }
+    }
     public void update_link(int i, int j, String cost) {
         this.matrix[i-1][j-1] = "" + cost;
+        this.matrix[j-1][i-1]= ""+cost;
     }
 
     public void print_matrix() throws Exception {
-        int i = 0;
-        for (String[] row : matrix) {
-            i++;
-            printRow(i, row);
+        //may need to be reformatted after changes to include unique ID's for server
+        //gets list of costs of neighbor id's in-order smallest to largest
+        for(int i=0;i<this.num_server;i++){
+            for(int j=1;j<=this.num_server;j++){//source server id
+                System.out.print(("Source Server ID:"+(i+1)+"  Next Hop Server ID:"));//source server id
+                System.out.print(j+"  Cost of Path:");//neighbor server id
+                System.out.print(matrix[i][j-1]);//cost of hop
+                System.out.println();
+            }
         }
+        // int i = 0;
+        // for (String[] row : matrix) {
+        //     i++;
+        //     printRow(i, row);
+        // }
     }
 
     public static void main(String args[]) throws Exception {
@@ -136,18 +156,26 @@ public class Server {
                 System.out.println("Input wrong. Try again");
                 status = true;
             }
-
         }
     }
 
     private void disable(String string) {
-
+        //do not close connection to server ID
+        //change topology/matrix to show it as closed
+        update_link(localServerID, Integer.parseInt(string), "inf");
     }
 
     private void crash() {
+        //close all active connections
+
+        //update matric to show all connections closed
+        crashed();
     }
 
     private void get_packets() {
+        //count number of recieved table updates from other servers
+        //reset to 0 whenever get_packets() is called
+        //reset counter at the end here
     }
 
     private void step() {
